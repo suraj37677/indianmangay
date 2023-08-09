@@ -1,0 +1,32 @@
+{
+  "name": "transcription-service",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.7.26",
+    "body-parser": "~1.15.1",
+    "cookie-parser": "~1.4.3",
+    "debug": "^2.2.0",
+    "dotenv": "^2.0.0",
+    "express": "~4.13.4",
+    "ffmpeg-static": "^2.0.0",
+    "ffprobe-static": "^2.0.0",
+    "file-type": "^4.0.0",
+    "google-cloud": "^0.45.2",
+    "hbs": "^4.0.1",
+    "lru-cache": "^4.0.2",
+    "morgan": "~1.7.0",
+    "node-fetch": "^1.6.3",
+    "node-ffprobe": "git://github.com/seanmtracey/node-ffprobe.git",
+    "rimraf": "^2.5.4",
+    "s3o-middleware": "^1.8.0",
+    "serve-favicon": "~2.3.0",
+    "shortid": "^2.2.6"
+  },
+  "engines": {
+    "node": ">= 6.11.0 < 7.0.0"
+  }
+}

@@ -1,0 +1,146 @@
+*[data-hidden="true"]{
+	display: none !important;
+}
+
+*[data-invisible="true"]{
+	visibility: hidden;
+}
+
+html, body{
+	padding: 0;
+	margin: 0;
+}
+
+html{
+	width: 100%;
+	height: 100%;
+	background-color: #fff1e0;
+	font-family: MetricWeb, sans-serif;
+}
+
+html * {
+	box-sizing: border-box;
+}
+
+main{
+    width: 100%;
+    max-width: 1180px;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+	align-items: center;
+}
+
+.mediaDrop{
+    width: 100%;
+    height: 150px;
+    max-width: 480px;
+    background: #b0b0b0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    color: white;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 3px;
+	margin-bottom: 1em;
+	text-align: center;
+    cursor: pointer;
+}
+
+.mediaDrop[data-ready="true"]{
+	background-image: url('https://www.ft.com/__origami/service/image/v2/images/raw/fticon-v1:upload%3Fcache-bust%3D2476322?width=200&source=ftlabs-transcription-dashboard&tint=gray');
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+body[data-dragging="true"] .mediaDrop{
+	border: 10px solid #777777;
+    border-style: dashed;
+}
+
+body[data-working="true"] .mediaDrop, body[data-complete="true"] .mediaDrop, body[data-working="true"] .transcribeOptions .options, body[data-complete="true"] .transcribeOptions .options{
+    display: none;
+}
+
+.transcribeOptions{
+	display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+}
+
+.transcribeOptions .o-forms div{
+	margin-bottom: 1em;
+}
+
+.transcriptionResults{
+	width: 100%;
+    max-width: 800px;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.transcriptionResults pre{
+	text-align: left;
+	overflow: scroll;
+	background: #e8e8e8;
+	border-radius: 3px;
+	padding: 1em;
+}
+
+body[data-working="true"] .transcriptionResults .finishedButton, body[data-working="true"] .transcriptionResults .previewButton, body[data-working="true"] .transcriptionResults .alternativeResults{
+    display: none;
+}
+
+.alternativeResults{
+    margin-bottom: 1em;
+}
+
+.overlay{
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background: rgba(0,0,0,.8);
+    top: 0;
+    left: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.overlay .container{
+    width: 90%;
+    background: white;
+    padding: 1em;
+    border-radius: 3px;
+    text-align: center;
+    max-width: 480px;
+}
+
+.overlay .container h3{
+    margin: 0;
+}
+
+.overlay .container p{
+    margin-bottom: 1em;
+}
+
+.overlay.video .container{
+    max-width: 640px;
+}
+
+.overlay.video .container video{
+    width: 100%;
+    margin-bottom: 1em;
+    max-height: 50vh;
+}

@@ -1,0 +1,353 @@
+<div class="mediaDrop">
+	
+	<div class="info">
+		<p>Drop a media for transcription<br>or click this box to select a file...</p>
+		<p>File must be <wbr>{{#each validFileTypes}}<strong>.{{this}}</strong> {{/each}}</p>
+		<input type="file" data-invisible="true" />
+	</div>
+	<div class="droppedInfo">
+		<p data-hidden="true"></p>
+	</div>
+
+</div>
+
+<div class="transcribeOptions">
+	
+	<div class="o-forms options">
+
+		<div class="outputFormatSelection">
+			<label class="o-forms__label">Transcription Output Type</label>
+			<input type="radio" name="radio" value="json" class="o-forms__radio" id="jsonOutput" checked></input>
+			<label for="jsonOutput" class="o-forms__label">JSON</label>
+			<input type="radio" name="radio" value="vtt" class="o-forms__radio" id="vttOutput"></input>
+			<label for="vttOutput" class="o-forms__label">VTT</label>
+			<input type="radio" name="radio" value="srt" class="o-forms__radio" id="srtOutput"></input>
+			<label for="srtOutput" class="o-forms__label">SRT</label>
+		</div>
+
+		<label for="languageSelection" class="o-forms__label">Language</label>
+		<small class="o-forms__additional-info">Select the language code to transcribe the video with</small>
+		<select id="languageSelection" class="o-forms__select">
+			{{#each languageOptions}}<option value="{{this}}">{{this}}</option>{{/each}}
+		</select>
+
+		<label for="o-forms-standard" class="o-forms__label">Service Token</label>
+		<small class="o-forms__additional-info"><a href="/token/generate" target="_blank">Get a token</a></small>
+		<input type="text" id="o-forms-standard" placeholder="3d3e5af97225421a8d1b3a88f34022cf" class="o-forms__text tokenInput"></input>
+
+	</div>
+
+	<input type="submit" value="Transcribe" class="o-buttons o-buttons--standout o-buttons--big submitData" />
+
+</div>
+
+<div class="transcriptionResults" data-hidden="true">
+	<h1>Transcription Result</h1>
+	<p class="info"></p>
+
+	<div class="o-buttons__group alternativeResults" data-hidden="true">
+		<button class="o-buttons" aria-selected="false" data-format="json">JSON</button>
+		<button class="o-buttons" data-format="vtt">VTT</button>
+		<button class="o-buttons" data-format="srt">SRT</button>
+	</div>
+
+	<pre class="output"></pre>
+	<button value="preview" class="o-buttons o-buttons--big previewButton">Preview Transcription</button> 
+	<button value="Finished" class="o-buttons o-buttons--standout o-buttons--big finishedButton">Finished</button> 
+
+</div>
+
+{{>overlay}}
+{{>video}}
+
+<script>
+
+	(function(){
+
+		'use strict';
+
+		var prevent = function(e){e.preventDefault();e.stopImmediatePropagation();};
+		var validFileTypes = [{{#each validFileTypes}}'{{this}}',{{/each}}];
+		var fileData = undefined;
+		var dropZone = document.querySelector('.mediaDrop');
+		var fileSelect = document.querySelector('input[type="file"]');
+		var submitBtn = document.querySelector('.submitData');
+
+		var tokenInput = document.querySelector('.tokenInput');
+		var langaugeSelection = document.querySelector('#languageSelection');
+		var outputRadio = document.querySelector('.outputFormatSelection');
+
+		var resultsHolder = document.querySelector('.transcriptionResults');
+		var resultsOutput = resultsHolder.querySelector('.output');
+
+		var resultsToggle = document.querySelector('.alternativeResults');
+
+		var jobInProgress = false;
+
+		var currentJobID = undefined;
+		var jobStatus = undefined;
+
+		var finishedButton = document.querySelector('.finishedButton');
+		var previewButton = document.querySelector('.previewButton');
+
+		languageSelection.querySelector('option[value="en-gb"]').setAttribute('selected', '');
+
+		window.addEventListener('drop', function(e){
+			prevent(e);
+			console.log(e);
+			document.body.dataset['dragging'] = 'false';
+		}, false);
+
+		window.addEventListener('dragover', function(e){
+			prevent(e);
+		}, false);
+
+		window.addEventListener('dragenter', function(e){
+			prevent(e);
+			document.body.dataset['dragging'] = 'true';
+		}, false);
+
+		window.addEventListener('dragend', function(e){
+			prevent(e);
+			document.body.dataset['dragging'] = 'false';
+		}, false);
+
+		function resetEverything(){
+
+			fileData = undefined;
+			resultsHolder.dataset.hidden = 'true';
+			dropZone.dataset.ready = 'false';
+			dropZone.querySelector('.info').dataset.hidden = 'false';
+			dropZone.querySelector('.droppedInfo p').dataset.hidden = "true";
+			submitBtn.value = 'Transcribe';
+			submitBtn.dataset.hidden = 'false';
+			jobInProgress = false;
+			currentJobID = undefined;
+			jobStatus = undefined;
+			resultsOutput.textContent = '';
+			document.body.dataset.working = 'false';
+			document.body.dataset.complete = 'false';
+
+		}
+
+		function handleSelectedFile(e, wasDropped){
+
+			var selectedFile = wasDropped ? e.dataTransfer.files[0] : e;
+			fileData = selectedFile;
+			console.log(selectedFile);
+			dropZone.dataset.ready = "true";
+			dropZone.querySelector('.info').dataset.hidden = 'true';
+			var p = dropZone.querySelector('.droppedInfo p');
+			p.textContent = selectedFile.name;
+
+			p.dataset.hidden = "false";
+
+		}
+
+		function displayResults(data, outputType){
+
+			resultsOutput.textContent = outputType === 'json' ? JSON.stringify(data) : data.output;
+			resultsHolder.dataset.hidden = "false";
+			
+		}
+
+		function checkJobStatus(id, outputType){
+
+			return fetch('/get/' + id + "?output=" + outputType)
+				.then(function(res){
+					if(res.status > 202){
+						throw res;
+					} else {
+						return res;
+					}
+				})
+				.then(function(res){
+					
+					if(res.status === 200){
+
+						if(outputType !== 'json'){
+
+							return res.text()
+								.then(function(data){
+									return {
+										finished : true,
+										output: data
+									};
+								})
+							;
+
+						} else {
+							return res.json();
+						}
+
+					} else {
+						return res.json();
+					}
+
+				})
+				.catch(function(err){
+					console.error(err);
+					throw(err);
+				})
+			;
+
+		}
+
+		function uploadFormToServer(){
+
+			document.body.dataset.working = 'true';
+			submitBtn.value = "Uploading 0%";
+			
+			var oReq = new XMLHttpRequest();
+			var queryParameters = "?token=" + tokenInput.value + "&output=" + outputRadio.querySelector('input:checked').value + "&languagecode=" + langaugeSelection.value;
+			console.log(queryParameters);
+			
+			oReq.upload.addEventListener('progress', function(evt){
+				
+				var percentUploaded = (evt.loaded / evt.total) * 100;
+				submitBtn.value = "Uploading " + (percentUploaded | 0) + "%";
+				console.log(percentUploaded);
+
+			}, false);
+
+			oReq.open("POST", "/transcribe" + queryParameters, true);
+			
+			oReq.onload = function(oEvent) {
+
+				if (oReq.status == 200) {
+					
+					var data = JSON.parse(oReq.responseText);
+					
+					console.log("Upload successful");
+					console.log(data);
+
+					jobInProgress = true;
+					submitBtn.dataset.hidden = "true";
+					
+					resultsHolder.dataset.hidden = 'false';
+					resultsHolder.querySelector('h1').textContent = 'Upload successful';
+					resultsHolder.querySelector('p').innerHTML = 'Transcription is underway with the id: <a href="/get/' + data.id + '">' + data.id + '</a>.<br>Results will display when they are ready.';
+
+					currentJobID = data.id;
+
+					(function(jobID, outputType){
+						
+						jobStatus = setInterval(function(){
+							console.log(jobID);
+							checkJobStatus(jobID, outputType)
+								.then(function(data){
+
+									console.log(data);
+									if(data.finished === true){
+										clearInterval(jobStatus);
+										console.log('FINISHED');
+										document.body.dataset.working = 'false';
+										document.body.dataset.complete = 'true';
+										displayResults(data, outputType);
+										resultsHolder.querySelector('h1').textContent = 'Transcription results';
+										resultsHolder.querySelector('p').textContent = '';
+										jobInProgress = false;
+										resultsToggle.dataset.hidden = "false";
+									} else {
+										resultsOutput.textContent = 'Transcribing...';
+									}
+
+								})
+								.catch(function(){
+									clearInterval(jobStatus);
+									resetEverything();
+									overlay.set('Application Error', 'Sorry, but something went wrong with that request. Please try again, and if it continues to fail, contact FT Labs.', 'OK', true);
+								})
+							;
+						}, 3000);
+
+					})(data.id, outputRadio.querySelector('input:checked').value);
+
+				} else {
+					console.error("Upload failed");
+					console.error(oReq);
+					resetEverything();
+					try{
+						var data = JSON.parse(oReq.responseText);
+						overlay.set('Error', data.reason, 'OK', true);
+					} catch(err){
+						oReq.abort();
+						console.error('Could not parse responseText object', oReq.responseText);
+						overlay.set('Application Error', 'Sorry, but something went wrong with that request. Please try again, and if it continues to fail, contact FT Labs.', 'OK', true);
+					}
+				}
+			};
+
+			oReq.onerror = function(event){
+				console.log('Request Error', event);
+				oReq.abort();
+				resetEverything();
+				overlay.set('Application Error', 'Sorry, but something went wrong with that request. Please try again, and if it continues to fail, contact FT Labs.', 'OK', true);
+			}
+
+			oReq.send(fileData);
+
+		}
+
+		dropZone.addEventListener('drop', function(e){
+			console.log(this.dataset.filetype);
+			resetEverything();
+			handleSelectedFile(e, true);
+		}, false);
+
+		dropZone.addEventListener('click', function(e){
+			fileSelect.click();
+		}, false);
+
+		fileSelect.addEventListener('change', function(e){
+			console.log(e);
+			console.log(this.files);
+			resetEverything();
+			handleSelectedFile(this.files[0], false);
+		}, false);
+
+		submitBtn.addEventListener('click', function(e){
+			if(tokenInput.value !== ''){
+				uploadFormToServer();
+			} else {
+				overlay.set('Token Required', 'You must enter a service token into the textbox before trying to submit this request.', undefined, true);
+			}
+		}, false);
+
+		finishedButton.addEventListener('click', function(){
+			resetEverything();
+		}, false);
+
+		previewButton.addEventListener('click', function(){
+			console.log('Click');
+			checkJobStatus(currentJobID, 'vtt')
+				.then(function(data){					
+					videoPreview.show(URL.createObjectURL(fileData), URL.createObjectURL(new File([data.output], 'track.vtt')));
+				})
+			;
+		}, false);
+
+		Array.from(resultsToggle.querySelectorAll('button')).forEach(function(button){
+
+			button.addEventListener('click', function(){
+				
+				if(currentJobID !== undefined && jobInProgress === false){
+
+					const selectedOutput = this.dataset.format
+
+					checkJobStatus(currentJobID, selectedOutput)
+						.then(function(data){
+							displayResults(data, data.output !== undefined ? selectedOutput : 'json');
+						})
+					;
+				
+				}
+
+			}, false);
+
+		});
+
+	})();
+
+
+</script>
